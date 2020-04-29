@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Accelerometer Test</string>
+    <string name="zero">0.0</string>
+</resources>
