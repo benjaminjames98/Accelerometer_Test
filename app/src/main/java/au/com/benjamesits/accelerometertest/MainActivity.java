@@ -8,8 +8,12 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -19,6 +23,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Float xAccel, yAccel, zAccel;
 
     TextView xAccelTV, yAccelTV, zAccelTV;
+
+    boolean calibrationInProgress = false;
+    float xOffset = 0.0f;
+    float yOffset = 0.0f;
+    List<Float> xOffsets = new ArrayList<Float>();
+    List<Float> yOffsets = new ArrayList<Float>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onResume() {
         super.onResume();
-        sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     @Override
@@ -63,13 +73,39 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         yAccel = event.values[1];
         zAccel = event.values[2];
 
-        xAccelTV.setText(String.format("X-Accel: %s", xAccel.toString()));
-        yAccelTV.setText(String.format("Y-Accel: %s", yAccel.toString()));
+        if (calibrationInProgress) {
+            xOffsets.add(xAccel);
+            yOffsets.add(yAccel);
+
+            if (xOffsets.size() == 10) {
+                float total = 0.0f;
+                for (float f : xOffsets)
+                    total += f;
+                xOffset = total / 10.0f;
+
+                total = 0.0f;
+                for (float f : yOffsets)
+                    total += f;
+                yOffset = total / 10.0f;
+
+                calibrationInProgress = false;
+            }
+        }
+
+        float correctedXAccel = xAccel - xOffset;
+        float correctedYAccel = yAccel - yOffset;
+
+        xAccelTV.setText(String.format("X-Accel: %s", Float.toString(correctedXAccel)));
+        yAccelTV.setText(String.format("Y-Accel: %s", Float.toString(correctedYAccel)));
         zAccelTV.setText(String.format("Z-Accel: %s", zAccel.toString()));
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
+    }
+
+    public void startCalibration(View view) {
+        calibrationInProgress = true;
     }
 }
